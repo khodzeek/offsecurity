@@ -140,7 +140,7 @@ pub struct ScanArgs {
     pub user_agent: Option<String>,
 
     /// Scanning intensity level: 1=passive, 2=light active, 3=full active
-    #[arg(short = 'L', long = "level", default_value = "1", value_parser = clap::value_parser!(u8).range(1..=3))]
+    #[arg(short = 'L', long = "level", visible_alias = "intensity", default_value = "1", value_parser = clap::value_parser!(u8).range(1..=3))]
     pub intensity_level: u8,
 
     /// Rate limit delay in milliseconds between requests
@@ -174,6 +174,14 @@ pub struct ScanArgs {
     /// Authentication credentials (e.g., --auth basic:user:pass or --auth bearer:token)
     #[arg(long = "auth", value_name = "TYPE:CREDENTIALS")]
     pub auth: Option<String>,
+
+    /// Basic authentication: --auth-basic "user:pass"
+    #[arg(long = "auth-basic", value_name = "USER:PASS")]
+    pub auth_basic: Option<String>,
+
+    /// Bearer token authentication: --auth-bearer "token"
+    #[arg(long = "auth-bearer", value_name = "TOKEN")]
+    pub auth_bearer: Option<String>,
 
     /// Allow insecure TLS connections (self-signed certificates)
     #[arg(long = "insecure")]

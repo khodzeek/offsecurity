@@ -76,7 +76,13 @@ impl ScanEngine {
         }).collect();
 
         // Authentication
-        if let Some(ref auth) = args.auth {
+        if let Some(ref basic) = args.auth_basic {
+            config.http.auth_type = Some("basic".into());
+            config.http.auth_credentials = Some(basic.clone());
+        } else if let Some(ref bearer) = args.auth_bearer {
+            config.http.auth_type = Some("bearer".into());
+            config.http.auth_credentials = Some(bearer.clone());
+        } else if let Some(ref auth) = args.auth {
             if let Some(creds) = auth.strip_prefix("basic:") {
                 config.http.auth_type = Some("basic".into());
                 config.http.auth_credentials = Some(creds.to_string());
