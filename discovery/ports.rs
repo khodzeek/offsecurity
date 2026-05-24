@@ -25,52 +25,67 @@ pub async fn scan_hosts(
     concurrency: usize,
 ) -> usize {
     let ports = get_ports(port_profile);
+    let total_ports = ports.len();
+
+    // Collect valid host IPs first (avoids borrow conflict with hosts slice)
+    let host_targets: Vec<(usize, String)> = hosts
+        .iter()
+        .enumerate()
+        .filter_map(|(i, h)| h.ip.as_ref().map(|ip| (i, ip.clone())))
+        .collect();
+
+    let host_count = host_targets.len();
+
+    println!("  Port scanning {} hosts x {} ports (profile: {})...",
+        host_count, total_ports, port_profile);
+
+    let results: Vec<(usize, Vec<Option<(u16, String)>>)> = stream::iter(host_targets)
+        .map(|(i, ip)| {
+            async move {
+                let host_results: Vec<Option<(u16, String)>> = stream::iter(ports.iter().copied())
+                    .map(|port| {
+                        let ip = ip.clone();
+                        async move {
+                            match tokio::time::timeout(
+                                Duration::from_millis(timeout_ms),
+                                tokio::net::TcpStream::connect((ip.as_str(), port)),
+                            ).await {
+                                Ok(Ok(stream)) => {
+                                    let mut service = guess_service(port);
+                                    if let Ok(banner) = grab_banner(&stream, port, timeout_ms).await {
+                                        if !banner.is_empty() {
+                                            service = format!("{} — {}", service, banner);
+                                        }
+                                    }
+                                    Some((port, service))
+                                }
+                                _ => None,
+                            }
+                        }
+                    })
+                    .buffer_unordered(concurrency)
+                    .collect()
+                    .await;
+
+                (i, host_results)
+            }
+        })
+        .buffer_unordered(concurrency.min(host_count.max(1)))
+        .collect()
+        .await;
+
     let mut total_scanned = 0;
 
-    for host in hosts {
-        let ip = match &host.ip {
-            Some(ip) => ip.clone(),
-            None => continue,
-        };
-
-        let results: Vec<_> = stream::iter(ports.iter().copied())
-            .map(|port| {
-                let ip = ip.clone();
-                async move {
-                    match tokio::time::timeout(
-                        Duration::from_millis(timeout_ms),
-                        tokio::net::TcpStream::connect((ip.as_str(), port)),
-                    )
-                    .await
-                    {
-                        Ok(Ok(stream)) => {
-                            let mut service = guess_service(port);
-                            // Try to grab banner
-                            if let Ok(banner) = grab_banner(&stream, port, timeout_ms).await {
-                                if !banner.is_empty() {
-                                    service = format!("{} — {}", service, banner);
-                                }
-                            }
-                            Some((port, service))
-                        }
-                        _ => None,
-                    }
-                }
-            })
-            .buffer_unordered(concurrency)
-            .collect()
-            .await;
-
-        for result in results {
+    for (i, host_results) in results {
+        for result in host_results {
             if let Some((port, service)) = result {
-                host.open_ports.push(port);
-                host.services.push((port, service));
+                hosts[i].open_ports.push(port);
+                hosts[i].services.push((port, service));
                 total_scanned += 1;
             }
         }
-
-        host.open_ports.sort();
-        host.services.sort_by_key(|(p, _)| *p);
+        hosts[i].open_ports.sort();
+        hosts[i].services.sort_by_key(|(p, _)| *p);
     }
 
     total_scanned
@@ -108,27 +123,34 @@ fn guess_service(port: u16) -> String {
     }
 }
 
-async fn grab_banner(stream: &tokio::net::TcpStream, port: u16, _timeout_ms: u64) -> Result<String, ()> {
+async fn grab_banner(stream: &tokio::net::TcpStream, port: u16, timeout_ms: u64) -> Result<String, ()> {
     // Only grab banners for common text-protocol ports
-    let banner_ports = [21, 22, 25, 80, 110, 143, 443, 3306, 5432, 6379, 8080, 27017];
+    let banner_ports = [21, 22, 25, 80, 110, 143, 3306, 5432, 6379, 8080, 27017];
     if !banner_ports.contains(&port) {
         return Ok(String::new());
     }
 
     let mut buf = [0u8; 256];
-    stream.readable().await.map_err(|_| ())?;
-    match stream.try_read(&mut buf) {
-        Ok(n) if n > 0 => {
-            let banner = String::from_utf8_lossy(&buf[..n])
-                .lines()
-                .next()
-                .unwrap_or("")
-                .trim()
-                .chars()
-                .filter(|c| c.is_ascii_graphic() || c.is_ascii_whitespace())
-                .take(80)
-                .collect::<String>();
-            Ok(banner)
+    match tokio::time::timeout(
+        Duration::from_millis(timeout_ms.min(2000)),
+        stream.readable(),
+    ).await {
+        Ok(Ok(())) => {
+            match stream.try_read(&mut buf) {
+                Ok(n) if n > 0 => {
+                    let banner = String::from_utf8_lossy(&buf[..n])
+                        .lines()
+                        .next()
+                        .unwrap_or("")
+                        .trim()
+                        .chars()
+                        .filter(|c| c.is_ascii_graphic() || c.is_ascii_whitespace())
+                        .take(80)
+                        .collect::<String>();
+                    Ok(banner)
+                }
+                _ => Ok(String::new()),
+            }
         }
         _ => Ok(String::new()),
     }
