@@ -40,20 +40,20 @@ A modern, fast, secure, and modular web application vulnerability scanner writte
 ```bash
 git clone https://github.com/khodzeek/offsecurity.git
 cd offsecurity
-cargo build --release
+cargo install --path .
 ```
 
-The optimized binary will be at `target/release/offsecurity`.
+After installation, `offsecurity` is available globally as a system command.
 
 ### Quick Start
 
 ```bash
-# Build and run directly
+# Build and run directly (no install)
 cargo run -- scan --url https://example.com
 
-# Build optimized release binary
-cargo build --release
-./target/release/offsecurity scan --url https://example.com
+# Or install globally
+cargo install --path .
+offsecurity scan --url https://example.com
 ```
 
 ## Usage
