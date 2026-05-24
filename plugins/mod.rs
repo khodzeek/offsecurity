@@ -9,6 +9,7 @@ use std::path::Path;
 
 /// Configuration for the plugin system
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct PluginConfig {
     pub plugins_dir: Option<String>,
     pub timeout_secs: u64,
@@ -112,6 +113,7 @@ pub async fn run_plugins(
     }
 }
 
+#[cfg(feature = "plugins")]
 fn discover_plugins(dir: &str) -> Result<Vec<std::path::PathBuf>, std::io::Error> {
     let mut wasm_files = Vec::new();
 

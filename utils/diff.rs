@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 /// Response diff result — compares baseline vs injected response
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ResponseDiff {
     /// Whether the injected payload appears in the response
     pub payload_reflected: bool,
@@ -22,6 +23,7 @@ pub struct ResponseDiff {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ReflectionPoint {
     pub offset: usize,
     pub context: String,
@@ -29,6 +31,7 @@ pub struct ReflectionPoint {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum ReflectionContext {
     HtmlBody,
     AttributeValue,
@@ -37,20 +40,6 @@ pub enum ReflectionContext {
     HttpHeader,
     UrlPath,
     Comment,
-}
-
-impl ReflectionPoint {
-    pub fn risk(&self) -> &str {
-        match self.context_type {
-            ReflectionContext::JavaScript => "Critical — unsanitized JS injection",
-            ReflectionContext::HtmlBody => "High — HTML tag injection possible",
-            ReflectionContext::AttributeValue => "High — attribute breakout possible",
-            ReflectionContext::JsonValue => "Medium — JSON context, XSS unlikely but data injection possible",
-            ReflectionContext::HttpHeader => "Medium — header injection risk",
-            ReflectionContext::UrlPath => "Low — URL context",
-            ReflectionContext::Comment => "Info — inside HTML comment",
-        }
-    }
 }
 
 /// Diff two responses to find injection evidence

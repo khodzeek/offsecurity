@@ -24,18 +24,6 @@ impl Confidence {
     pub fn value(&self) -> f64 {
         *self as u8 as f64 / 100.0
     }
-
-    pub fn label(&self) -> &str {
-        match self {
-            Confidence::Confirmed => "Confirmed",
-            Confidence::High => "High",
-            Confidence::Medium => "Medium",
-            Confidence::Low => "Low",
-            Confidence::Heuristic => "Heuristic",
-            Confidence::Info => "Info",
-            Confidence::Uncertain => "Uncertain",
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
