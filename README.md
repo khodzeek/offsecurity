@@ -38,7 +38,7 @@ A modern, fast, secure, and modular web application vulnerability scanner writte
 ### From Source
 
 ```bash
-git clone https://github.com/offsecurity/offsecurity.git
+git clone https://github.com/khodzeek/offsecurity.git
 cd offsecurity
 cargo build --release
 ```
