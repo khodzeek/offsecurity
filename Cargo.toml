@@ -1,0 +1,95 @@
+[package]
+name = "offsecurity"
+version = "1.0.0"
+edition = "2021"
+description = "Professional web vulnerability analysis tool for offensive and defensive security auditing"
+authors = ["offsecurity team"]
+license = "MIT"
+repository = "https://github.com/khodzeek/offsecurity"
+readme = "README.md"
+keywords = ["security", "web", "vulnerability", "scanner", "pentest", "offensive", "defensive"]
+
+[[bin]]
+name = "offsecurity"
+path = "main.rs"
+
+[dependencies]
+# CLI
+clap = { version = "4.5", features = ["derive", "color", "wrap_help"] }
+
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "cookies", "gzip", "brotli", "deflate", "stream", "socks"], default-features = false }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Config
+toml = "0.8"
+
+# HTML parsing
+scraper = "0.20"
+
+# Terminal UI
+colored = "2.1"
+indicatif = "0.17"
+
+# Async utilities
+futures = "0.3"
+futures-util = "0.3"
+
+# Logging / Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# URL handling
+url = "2.5"
+
+# Regex
+regex = "1.11"
+lazy_static = "1.5"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Random
+rand = "0.8"
+uuid = { version = "1.11", features = ["v4"] }
+
+# TLS certificate parsing
+rustls = { version = "0.23", features = ["ring"] }
+tokio-rustls = "0.26"
+x509-parser = "0.17"
+webpki-roots = "1.0"
+
+# WebSocket
+tokio-tungstenite = "0.24"
+
+# SQLite for differential scanning
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# Headless browser automation (Chrome/Edge DevTools Protocol)
+headless_chrome = "1.0"
+
+# WASM plugin runtime
+wasmtime = { version = "25", features = ["runtime", "cranelift"] }
+
+# Encoding
+base64 = "0.22"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[profile.dev]
+opt-level = 0

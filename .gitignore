@@ -1,0 +1,30 @@
+# Rust build
+/target/
+/tmp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project artifacts (scan output)
+reports*/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Secrets
+.env
+*.pem
+*.key
+credentials.json
+
+# WASM plugins (compiled)
+plugins/*.wasm

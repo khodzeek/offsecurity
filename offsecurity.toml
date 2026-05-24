@@ -1,0 +1,27 @@
+# offsecurity — Configuration File
+# Copy this to offsecurity.toml and customize as needed
+
+[scan]
+timeout_secs = 15
+max_threads = 50
+rate_limit_ms = 0
+max_retries = 2
+follow_redirects = true
+max_redirects = 10
+max_body_size = 5242880
+delay_between_requests_ms = 0
+
+[output]
+verbose = false
+color = true
+output_dir = "reports"
+json_report = true
+html_report = true
+txt_report = true
+
+[http]
+user_agent = "offsecurity/1.0 (Security Audit Tool)"
+accept = "*/*"
+accept_language = "en-US,en;q=0.9"
+max_connections_per_host = 20
+pool_idle_timeout_secs = 90
