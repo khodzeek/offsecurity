@@ -44,10 +44,9 @@ async fn main() {
             println!("{}", format!("╭─ Discovery: {}", args.domain).cyan());
             println!();
 
-            let (mut hosts, duration) = discovery::subdomains::enumerate_with_wordlist(
+            let (mut hosts, _duration) = discovery::subdomains::enumerate_with_wordlist(
                 &args.domain, 100, args.wordlist.as_deref(),
             ).await;
-            println!("{}", format!("  Resolved {} subdomains in {:.2}s", hosts.len(), duration).green());
 
             if !args.no_ports {
                 let profile = args.port_profile.as_deref().unwrap_or("common");
