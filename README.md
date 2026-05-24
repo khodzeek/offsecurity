@@ -43,7 +43,14 @@ cd offsecurity
 cargo install --path .
 ```
 
-After installation, `offsecurity` is available globally as a system command.
+After installation, ensure `~/.cargo/bin` is in your PATH:
+
+```bash
+echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+`offsecurity` is now available globally as a system command.
 
 ### Quick Start
 
