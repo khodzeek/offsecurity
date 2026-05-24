@@ -13,8 +13,16 @@
 .DS_Store
 Thumbs.db
 
-# Project artifacts (scan output)
-reports*/
+# Scan output artifacts (generated at runtime)
+/reports/*.json
+/reports/*.html
+/reports/*.txt
+/reports/*.xml
+/reports/*.sarif
+/reports/*.ndjson
+/reports/exploits/
+/reports/screenshots/
+/reports_*/
 *.db
 *.db-journal
 *.db-wal

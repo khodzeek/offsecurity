@@ -10,6 +10,7 @@ use tracing::{info, error};
 pub struct ScanEngine {
     config: AppConfig,
     args: ScanArgs,
+    #[cfg(feature = "browser")]
     pub browser_config: crate::core::browser::BrowserConfig,
     pub plugin_config: crate::plugins::PluginConfig,
     pub crawler_config: crate::core::crawler::CrawlerConfig,
@@ -110,6 +111,7 @@ impl ScanEngine {
             config.output.txt_report = true;
         }
 
+        #[cfg(feature = "browser")]
         let browser_config = crate::core::browser::BrowserConfig {
             enabled: args.browser || args.aggressive,
             browser_path: args.browser_path.clone(),
@@ -117,9 +119,15 @@ impl ScanEngine {
             screenshot: args.screenshot || args.aggressive,
         };
 
+        #[cfg(feature = "plugins")]
         let plugin_config = crate::plugins::PluginConfig {
             plugins_dir: args.plugins_dir.clone(),
             timeout_secs: args.plugin_timeout,
+        };
+        #[cfg(not(feature = "plugins"))]
+        let plugin_config = crate::plugins::PluginConfig {
+            plugins_dir: None,
+            timeout_secs: 5,
         };
 
         let crawler_config = crate::core::crawler::CrawlerConfig {
@@ -128,7 +136,12 @@ impl ScanEngine {
             same_origin_only: if args.aggressive { false } else { !args.crawl_all_origins },
         };
 
-        Self { config, args, browser_config, plugin_config, crawler_config, webhook_url }
+        Self {
+            config, args,
+            #[cfg(feature = "browser")]
+            browser_config,
+            plugin_config, crawler_config, webhook_url,
+        }
     }
 
     pub async fn run(&self) -> Result<(), ScanError> {
@@ -222,6 +235,7 @@ impl ScanEngine {
             client,
             self.config.clone(),
             skip_checks,
+            #[cfg(feature = "browser")]
             self.browser_config.clone(),
             self.plugin_config.clone(),
             self.args.aggressive,
@@ -336,7 +350,7 @@ impl ScanEngine {
     }
 
     fn generate_reports(&self, results: &[crate::models::ScanResult], scan_id: &str) -> Result<(), ScanError> {
-        use crate::reports;
+        use crate::reporting;
 
         // Ensure output directory exists
         std::fs::create_dir_all(&self.config.output.output_dir).map_err(|e| {
@@ -345,19 +359,19 @@ impl ScanEngine {
 
         if self.config.output.json_report {
             let path = format!("{}/scan_{}.json", self.config.output.output_dir, &scan_id[..8]);
-            reports::json::generate(results, &path)?;
+            reporting::json::generate(results, &path)?;
             output::banner::print_report_saved("JSON", &path);
         }
 
         if self.config.output.html_report {
             let path = format!("{}/scan_{}.html", self.config.output.output_dir, &scan_id[..8]);
-            reports::html::generate(results, &path)?;
+            reporting::html::generate(results, &path)?;
             output::banner::print_report_saved("HTML", &path);
         }
 
         if self.config.output.txt_report {
             let path = format!("{}/scan_{}.txt", self.config.output.output_dir, &scan_id[..8]);
-            reports::txt::generate(results, &path)?;
+            reporting::txt::generate(results, &path)?;
             output::banner::print_report_saved("TXT", &path);
         }
 
@@ -366,19 +380,19 @@ impl ScanEngine {
 
         if gen_all || self.args.sarif {
             let path = format!("{}/scan_{}.sarif", self.config.output.output_dir, &scan_id[..8]);
-            reports::sarif::generate(results, &path)?;
+            reporting::sarif::generate(results, &path)?;
             output::banner::print_report_saved("SARIF", &path);
         }
 
         if gen_all || self.args.junit {
             let path = format!("{}/scan_{}.xml", self.config.output.output_dir, &scan_id[..8]);
-            reports::junit::generate(results, &path)?;
+            reporting::junit::generate(results, &path)?;
             output::banner::print_report_saved("JUnit", &path);
         }
 
         if gen_all || self.args.ndjson {
             let path = format!("{}/scan_{}.ndjson", self.config.output.output_dir, &scan_id[..8]);
-            reports::ndjson::generate(results, &path)?;
+            reporting::ndjson::generate(results, &path)?;
             output::banner::print_report_saved("ndjson", &path);
         }
 

@@ -2,7 +2,7 @@ mod cli;
 mod core;
 mod scanner;
 mod checks;
-mod reports;
+mod reporting;
 mod models;
 mod utils;
 mod output;

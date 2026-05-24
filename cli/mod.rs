@@ -216,26 +216,32 @@ pub struct ScanArgs {
     pub all_formats: bool,
 
     /// Enable headless browser analysis (DOM XSS, storage, frameworks)
+    #[cfg(feature = "browser")]
     #[arg(long = "browser")]
     pub browser: bool,
 
     /// Path to Chrome/Edge/Chromium executable for browser analysis
+    #[cfg(feature = "browser")]
     #[arg(long = "browser-path")]
     pub browser_path: Option<String>,
 
     /// Browser page load timeout in seconds
+    #[cfg(feature = "browser")]
     #[arg(long = "browser-timeout", default_value = "15")]
     pub browser_timeout: u64,
 
     /// Save screenshots of analyzed pages
+    #[cfg(feature = "browser")]
     #[arg(long = "screenshot")]
     pub screenshot: bool,
 
     /// Directory for WASM plugins
+    #[cfg(feature = "plugins")]
     #[arg(long = "plugins-dir")]
     pub plugins_dir: Option<String>,
 
     /// Timeout per plugin in seconds
+    #[cfg(feature = "plugins")]
     #[arg(long = "plugin-timeout", default_value = "5")]
     pub plugin_timeout: u64,
 

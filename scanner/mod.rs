@@ -11,6 +11,7 @@ pub struct Scanner {
     client: Arc<HttpClient>,
     config: AppConfig,
     skip_checks: Vec<String>,
+    #[cfg(feature = "browser")]
     browser_config: crate::core::browser::BrowserConfig,
     plugin_config: crate::plugins::PluginConfig,
     aggressive: bool,
@@ -21,7 +22,7 @@ impl Scanner {
         client: Arc<HttpClient>,
         config: AppConfig,
         skip_checks: Vec<String>,
-        browser_config: crate::core::browser::BrowserConfig,
+        #[cfg(feature = "browser")] browser_config: crate::core::browser::BrowserConfig,
         plugin_config: crate::plugins::PluginConfig,
         aggressive: bool,
     ) -> Self {
@@ -29,6 +30,7 @@ impl Scanner {
             client,
             config,
             skip_checks,
+            #[cfg(feature = "browser")]
             browser_config,
             plugin_config,
             aggressive,
@@ -56,6 +58,7 @@ impl Scanner {
         let client = Arc::clone(&self.client);
         let config = self.config.clone();
         let skip = self.skip_checks.clone();
+        #[cfg(feature = "browser")]
         let browser_config = self.browser_config.clone();
         let plugin_config = self.plugin_config.clone();
         let aggressive = self.aggressive;
@@ -65,6 +68,7 @@ impl Scanner {
                 let client = Arc::clone(&client);
                 let config = config.clone();
                 let skip = skip.clone();
+                #[cfg(feature = "browser")]
                 let browser_config = browser_config.clone();
                 let plugin_config = plugin_config.clone();
                 let aggressive = aggressive;
@@ -75,7 +79,7 @@ impl Scanner {
                         tokio::time::sleep(delay).await;
                     }
 
-                    let result = scan_single_url(&client, &config, &url, &skip, &browser_config, &plugin_config, aggressive).await;
+                    let result = scan_single_url(&client, &config, &url, &skip, #[cfg(feature = "browser")] &browser_config, &plugin_config, aggressive).await;
 
                     if let Some(ref bar) = pb {
                         bar.inc(1);
@@ -102,7 +106,7 @@ async fn scan_single_url(
     config: &AppConfig,
     url: &str,
     skip_checks: &[String],
-    browser_config: &crate::core::browser::BrowserConfig,
+    #[cfg(feature = "browser")] browser_config: &crate::core::browser::BrowserConfig,
     plugin_config: &crate::plugins::PluginConfig,
     aggressive: bool,
 ) -> ScanResult {
@@ -248,15 +252,18 @@ async fn scan_single_url(
     }
 
     // Headless browser analysis
-    if browser_config.enabled && !skip_checks.contains(&"browser".to_string()) {
-        findings.extend(
-            crate::core::browser::analyze_with_browser(
-                url,
-                browser_config,
-                &config.output.output_dir,
-                &uuid::Uuid::new_v4().to_string(),
-            ).await,
-        );
+    #[cfg(feature = "browser")]
+    {
+        if browser_config.enabled && !skip_checks.contains(&"browser".to_string()) {
+            findings.extend(
+                crate::core::browser::analyze_with_browser(
+                    url,
+                    browser_config,
+                    &config.output.output_dir,
+                    &uuid::Uuid::new_v4().to_string(),
+                ).await,
+            );
+        }
     }
 
     // WASM plugin execution
