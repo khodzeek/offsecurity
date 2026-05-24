@@ -44,8 +44,40 @@ async fn detect_wildcard_dns(domain: &str) -> Option<HashSet<String>> {
     if wildcard_ips.is_empty() { None } else { Some(wildcard_ips) }
 }
 
-/// Verify a subdomain via HTTP HEAD request — returns true if it serves real content
-async fn verify_subdomain_http(fqdn: &str, wildcard_baseline: Option<&str>) -> bool {
+/// Baseline HTTP response from a non-existent wildcard subdomain
+#[derive(Clone)]
+struct WildcardBaseline {
+    status: u16,
+    body_len: usize,
+}
+
+/// Get a baseline HTTP response from a random wildcard subdomain
+async fn get_wildcard_baseline(domain: &str) -> Option<WildcardBaseline> {
+    let probe = format!("_wc_{}_{}.{}",
+        uuid::Uuid::new_v4().to_string().chars().take(4).collect::<String>(),
+        uuid::Uuid::new_v4().to_string().chars().take(4).collect::<String>(),
+        domain);
+
+    for scheme in ["https", "http"] {
+        let url = format!("{}://{}/", scheme, probe);
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(5))
+            .danger_accept_invalid_certs(true)
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .ok()?;
+
+        if let Ok(resp) = client.get(&url).send().await {
+            let status = resp.status().as_u16();
+            let body = resp.text().await.unwrap_or_default();
+            return Some(WildcardBaseline { status, body_len: body.len() });
+        }
+    }
+    None
+}
+
+/// Verify a subdomain via HTTP GET — compares against wildcard baseline
+async fn verify_subdomain_http(fqdn: &str, baseline: Option<&WildcardBaseline>) -> bool {
     for scheme in ["https", "http"] {
         let url = format!("{}://{}/", scheme, fqdn);
         let client = match reqwest::Client::builder()
@@ -58,7 +90,7 @@ async fn verify_subdomain_http(fqdn: &str, wildcard_baseline: Option<&str>) -> b
             Err(_) => continue,
         };
 
-        let resp = match client.head(&url).send().await {
+        let resp = match client.get(&url).send().await {
             Ok(r) => r,
             Err(_) => continue,
         };
@@ -66,38 +98,31 @@ async fn verify_subdomain_http(fqdn: &str, wildcard_baseline: Option<&str>) -> b
         let status = resp.status().as_u16();
         let body = resp.text().await.unwrap_or_default();
 
-        // If we have a wildcard baseline, compare against it
-        if let Some(baseline) = wildcard_baseline {
-            // If the response differs from the wildcard baseline, it's a real subdomain
-            if body != baseline || status >= 400 {
-                return body != baseline;
+        if let Some(wc) = baseline {
+            // Different status code → real subdomain
+            if status != wc.status {
+                return true;
             }
+            // Significantly different body size (>15% difference) → real subdomain
+            let max_len = wc.body_len.max(body.len());
+            if max_len > 0 {
+                let diff = if wc.body_len > body.len() {
+                    wc.body_len - body.len()
+                } else {
+                    body.len() - wc.body_len
+                };
+                if diff as f64 / max_len as f64 > 0.15 {
+                    return true;
+                }
+            }
+            // Same size and status → wildcard, filter out
             return false;
         }
 
-        // Without baseline, consider any successful HTTP response as a real subdomain
+        // No baseline — accept anything that responds
         return status < 500;
     }
     false
-}
-
-/// Get a baseline HTTP response from the wildcard domain
-async fn get_wildcard_baseline(domain: &str) -> Option<String> {
-    let probe = format!("_{}.{}", uuid::Uuid::new_v4().to_string().chars().take(6).collect::<String>(), domain);
-    for scheme in ["https", "http"] {
-        let url = format!("{}://{}/", scheme, probe);
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(5))
-            .danger_accept_invalid_certs(true)
-            .redirect(reqwest::redirect::Policy::none())
-            .build()
-            .ok()?;
-
-        if let Ok(resp) = client.head(&url).send().await {
-            return resp.text().await.ok();
-        }
-    }
-    None
 }
 
 /// Enumerate subdomains for a given domain
@@ -172,7 +197,7 @@ pub async fn enumerate_with_wordlist(
                             if let Some(ref wc_ips) = wildcard_ips {
                                 if wc_ips.contains(&ip) {
                                     // IP matches wildcard — verify via HTTP
-                                    if !verify_subdomain_http(&fqdn, wc_baseline.as_deref()).await {
+                                    if !verify_subdomain_http(&fqdn, wc_baseline.as_ref()).await {
                                         return None;
                                     }
                                 }
