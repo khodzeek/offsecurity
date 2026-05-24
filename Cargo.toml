@@ -31,11 +31,11 @@ serde_json = "1.0"
 toml = "0.8"
 
 # HTML parsing
-scraper = "0.20"
+scraper = "0.27"
 
 # Terminal UI
-colored = "2.1"
-indicatif = "0.17"
+colored = "3.1"
+indicatif = "0.18"
 
 # Async utilities
 futures = "0.3"
@@ -66,14 +66,14 @@ uuid = { version = "1.11", features = ["v4"] }
 # TLS certificate parsing
 rustls = { version = "0.23", features = ["ring"] }
 tokio-rustls = "0.26"
-x509-parser = "0.17"
+x509-parser = "0.18"
 webpki-roots = "1.0"
 
 # WebSocket
-tokio-tungstenite = "0.24"
+tokio-tungstenite = "0.29"
 
 # SQLite for differential scanning
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.39", features = ["bundled"] }
 
 # Headless browser automation (Chrome/Edge DevTools Protocol)
 headless_chrome = { version = "1.0", optional = true }

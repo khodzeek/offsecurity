@@ -53,7 +53,7 @@ pub fn save_scan(conn: &Connection, result: &ScanResult) -> Result<(), rusqlite:
             now,
             result.scan_version,
             result.intensity_level,
-            result.statistics.total,
+            result.statistics.total as i64,
             result.duration_secs,
         ],
     )?;
