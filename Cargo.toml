@@ -1,7 +1,7 @@
 [package]
 name = "offsecurity"
 version = "1.0.1"
-edition = "2021"
+edition = "2026"
 description = "Professional web vulnerability analysis tool for offensive and defensive security auditing"
 authors = ["offsecurity team"]
 license = "MIT"
